@@ -1,0 +1,16 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net48</TargetFramework>
+  </PropertyGroup>
+	<ItemGroup>
+		<PackageReference Include="OpenCL.Net" Version="2.2.9" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Update="kernel.cl">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</None>
+	</ItemGroup>
+</Project>
