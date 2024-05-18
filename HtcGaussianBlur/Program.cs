@@ -1,169 +1,96 @@
 ﻿using System;
+using System.Drawing;
 using System.IO;
+using System.Reflection;
+using CommandLine;
+using CommandLine.Text;
+using HtcGaussianBlur;
 using OpenCL.Net;
 
 namespace OpenCLdotNet
 {
     class Program
     {
-        static void CheckStatus(ErrorCode err)
-        {
-            if (err != ErrorCode.Success)
-            {
-                Console.WriteLine("OpenCL Error: " + err.ToString());
-                System.Environment.Exit(1);
-            }
-        }
-
-        static void PrintVector(int[] vector, int elementSize, string label)
-        {
-            Console.WriteLine(label + ":");
-
-            for (int i = 0; i < elementSize; ++i)
-            {
-                Console.Write(vector[i] + " ");
-            }
-
-            Console.WriteLine();
-        }
+        private const string c_outpuFileName = "Output";
 
         static void Main(string[] args)
         {
-  
-            // input and output arrays
-            const int elementSize = 10;
-            const int dataSize = elementSize * sizeof(int);
-            int[] vectorA = new int[elementSize];
-            int[] vectorB = new int[elementSize];
-            int[] vectorC = new int[elementSize];
-            
-            for (int i = 0; i < elementSize; i++)
+            Image inputImage = null;
+            var gaussianFilterKernelSize = 0;
+            var outputFilePath = "";
+            var verboseOutput = false;
+            Parser.Default.ParseArguments<CliOptions>(args)
+                .WithParsed((parsedArgs) => {
+                    if (parsedArgs.Verbose)
+                    {
+                        verboseOutput = true;
+                    }
+                    gaussianFilterKernelSize = parsedArgs.GaussianFilterKernelSize;
+                    if(parsedArgs.GaussianFilterKernelSize <= 0 || parsedArgs.GaussianFilterKernelSize > 9)
+                    {
+                        Console.WriteLine("Gaussian gilter kernel is outside range! - it is being set to 9");
+                        gaussianFilterKernelSize = 9;
+                    }
+
+                    outputFilePath = parsedArgs.OutputFilePath;
+                    if (parsedArgs.OutputFilePath == null)
+                    {
+                        outputFilePath = Path.Combine(Path.GetDirectoryName(parsedArgs.InputFilePath), c_outpuFileName + Path.GetExtension(parsedArgs.InputFilePath));
+                    }
+                    
+                    if(!File.Exists(parsedArgs.InputFilePath))
+                    {
+                        Console.WriteLine("Input filed could not be found!");
+                        return;
+                    }
+                    try
+                    {
+                        inputImage = Bitmap.FromFile(parsedArgs.InputFilePath);
+                    } catch (Exception ex)
+                    {
+                        Console.WriteLine("Input filed could not be loaded!");
+                        if (verboseOutput) {  Console.WriteLine(ex); }
+                        return;
+                    } 
+                });
+            byte[] outputImageBytes;
+            try
             {
-                vectorA[i] = i;
-                vectorB[i] = i;
+                var inputImageBytes = ImageToByteArray(inputImage);
+                outputImageBytes = OpenCl.ExecuteOpenCL(inputImageBytes, inputImage.Width, inputImage.Height, gaussianFilterKernelSize);
             }
-
-            // used for checking error status of api calls
-            ErrorCode status;
-
-            // retrieve the number of platforms
-            uint numPlatforms = 0;
-            CheckStatus(Cl.GetPlatformIDs(0, null, out numPlatforms));
-
-            if (numPlatforms == 0)
+            catch (Exception ex)
             {
-                Console.WriteLine("Error: No OpenCL platform available!");
-                System.Environment.Exit(1);
+                Console.WriteLine("Input image could not be processed!");
+                if (verboseOutput) { Console.WriteLine(ex); }
+                return;
             }
-
-            // select the platform
-            Platform[] platforms = new Platform[numPlatforms];
-            CheckStatus(Cl.GetPlatformIDs(1, platforms, out numPlatforms));
-            Platform platform = platforms[0];
-
-            // retrieve the number of devices
-            uint numDevices = 0;
-            CheckStatus(Cl.GetDeviceIDs(platform, DeviceType.All, 0, null, out numDevices));
-
-            if (numDevices == 0)
+            try
             {
-                Console.WriteLine("Error: No OpenCL device available for platform!");
-                System.Environment.Exit(1);
-            }
-
-            // select the device
-            Device[] devices = new Device[numDevices];
-            CheckStatus(Cl.GetDeviceIDs(platform, DeviceType.All, numDevices, devices, out numDevices));
-            Device device = devices[0];
-
-            // create context
-            Context context = Cl.CreateContext(null, 1, new Device[] { device }, null, IntPtr.Zero, out status);
-            CheckStatus(status);
-
-            // create command queue
-            CommandQueue commandQueue = Cl.CreateCommandQueue(context, device, CommandQueueProperties.None, out status);
-            CheckStatus(status);
-
-            // allocate two input and one output buffer for the three vectors
-            IMem<int> bufferA = Cl.CreateBuffer<int>(context, MemFlags.ReadOnly, dataSize, out status);
-            CheckStatus(status);
-            IMem<int> bufferB = Cl.CreateBuffer<int>(context, MemFlags.ReadOnly, dataSize, out status); ;
-            CheckStatus(status);
-            IMem<int> bufferC = Cl.CreateBuffer<int>(context, MemFlags.WriteOnly, dataSize, out status); ;
-            CheckStatus(status);
-
-            // write data from the input vectors to the buffers
-            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferA, Bool.True, IntPtr.Zero, new IntPtr(dataSize), vectorA, 0, null, out var _));
-            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferB, Bool.True, IntPtr.Zero, new IntPtr(dataSize), vectorB, 0, null, out var _));
-
-            // create the program
-            string programSource = File.ReadAllText("kernel.cl");
-            OpenCL.Net.Program program = Cl.CreateProgramWithSource(context, 1, new string[] { programSource }, null, out status);
-            CheckStatus(status);
-
-            // build the program
-            status = Cl.BuildProgram(program, 1, new Device[] { device }, "", null, IntPtr.Zero);
-            if (status != ErrorCode.Success)
+                var outputImage = ByteArrayToImage(outputImageBytes);
+                outputImage.Save(outputFilePath);
+            } catch(Exception ex)
             {
-                InfoBuffer infoBuffer = Cl.GetProgramBuildInfo(program, device, ProgramBuildInfo.Log, out status);
-                CheckStatus(status);
-                Console.WriteLine("Build Error: " + infoBuffer.ToString());
-                System.Environment.Exit(1);
+                Console.WriteLine("Output File could not be saved!");
+                if (verboseOutput) { Console.WriteLine(ex); }
+                return;
             }
+            Console.WriteLine($"Success: Output Image has been saved to {outputFilePath}");
+        }
 
-            // create the vector addition kernel
-            OpenCL.Net.Kernel kernel = Cl.CreateKernel(program, "vector_add", out status);
-            CheckStatus(status);
 
-            // set the kernel arguments
-            CheckStatus(Cl.SetKernelArg(kernel, 0, bufferA));
-            CheckStatus(Cl.SetKernelArg(kernel, 1, bufferB));
-            CheckStatus(Cl.SetKernelArg(kernel, 2, bufferC));
+        public static byte[] ImageToByteArray(Image imageIn)
+        {
+            MemoryStream memoryStream = new MemoryStream();
+            imageIn.Save(memoryStream, imageIn.RawFormat);
+            return memoryStream.ToArray();
+        }
 
-            // output device capabilities
-            IntPtr paramSize;
-            CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkGroupSize, IntPtr.Zero, InfoBuffer.Empty, out paramSize));
-            InfoBuffer maxWorkGroupSizeBuffer = new InfoBuffer(paramSize);
-            CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkGroupSize, paramSize, maxWorkGroupSizeBuffer, out paramSize));
-            int maxWorkGroupSize = maxWorkGroupSizeBuffer.CastTo<int>();
-            Console.WriteLine("Device Capabilities: Max work items in single group: " + maxWorkGroupSize);
-
-            CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkItemDimensions, IntPtr.Zero, InfoBuffer.Empty, out paramSize));
-            InfoBuffer dimensionInfoBuffer = new InfoBuffer(paramSize);
-            CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkItemDimensions, paramSize, dimensionInfoBuffer, out paramSize));
-            int maxWorkItemDimensions = dimensionInfoBuffer.CastTo<int>();
-            Console.WriteLine("Device Capabilities: Max work item dimensions: " + maxWorkItemDimensions);
-
-            CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkItemSizes, IntPtr.Zero, InfoBuffer.Empty, out paramSize));
-            InfoBuffer maxWorkItemSizesInfoBuffer = new InfoBuffer(paramSize);
-            CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkItemSizes, paramSize, maxWorkItemSizesInfoBuffer, out paramSize));
-            IntPtr[] maxWorkItemSizes = maxWorkItemSizesInfoBuffer.CastToArray<IntPtr>(maxWorkItemDimensions);
-            Console.Write("Device Capabilities: Max work items in group per dimension:");
-            for (int i = 0; i < maxWorkItemDimensions; ++i)
-                Console.Write(" " + i + ":" + maxWorkItemSizes[i]);
-            Console.WriteLine();
-
-            // execute the kernel
-            // ndrange capabilities only need to be checked when we specify a local work group size manually
-            // in our case we provide NULL as local work group size, which means groups get formed automatically
-            CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 1, null, new IntPtr[] { new IntPtr(elementSize) }, null, 0, null, out var _));
-
-            // read the device output buffer to the host output array
-            CheckStatus(Cl.EnqueueReadBuffer(commandQueue, bufferC, Bool.True, IntPtr.Zero, new IntPtr(dataSize), vectorC, 0, null, out var _));
-
-            // output result
-            PrintVector(vectorA, elementSize, "Input A");
-            PrintVector(vectorB, elementSize, "Input B");
-            PrintVector(vectorC, elementSize, "Output C");
-
-            // release opencl objects
-            CheckStatus(Cl.ReleaseKernel(kernel));
-            CheckStatus(Cl.ReleaseProgram(program));
-            CheckStatus(Cl.ReleaseMemObject(bufferC));
-            CheckStatus(Cl.ReleaseMemObject(bufferB));
-            CheckStatus(Cl.ReleaseMemObject(bufferA));
-            CheckStatus(Cl.ReleaseCommandQueue(commandQueue));
-            CheckStatus(Cl.ReleaseContext(context));
+        public static Image ByteArrayToImage(byte[] byteArrayIn)
+        {
+            var memoryStream = new MemoryStream(byteArrayIn);
+            var returnImage = Image.FromStream(memoryStream, useEmbeddedColorManagement: true, validateImageData: true);
+            return returnImage;
         }
     }
 }
