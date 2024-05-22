@@ -11,7 +11,7 @@ namespace HtcGaussianBlur
     public static class OpenCl
     {
         private const string c_kernelFileName = "kernel.cl";
-        private const string c_kernelProgramName = "vector_add";
+        private const string c_kernelProgramName = "apply_gaussian_blur";
 
         private static void CheckStatus(ErrorCode errorCode)
         {
@@ -42,6 +42,8 @@ namespace HtcGaussianBlur
             int dataSize = elementSize * sizeof(byte);
             byte[] inputImageArray = new byte[elementSize];
             byte[] outputImageArray = new byte[elementSize];
+            double[] gaussianKernel = GaussianFilterKernel.getKernelBySize(gaussianFilterKernelSize);
+            int gaussianKernelDataSize = gaussianKernel.Length * sizeof(byte);
 
             // used for checking error status of api calls
             ErrorCode status;
@@ -89,9 +91,12 @@ namespace HtcGaussianBlur
             CheckStatus(status);
             IMem<byte> bufferOutputImage = Cl.CreateBuffer<byte>(context, MemFlags.ReadOnly, dataSize, out status); ;
             CheckStatus(status);
+            IMem<double> bufferGaussianKernel = Cl.CreateBuffer<double>(context, MemFlags.ReadOnly, gaussianKernelDataSize, out status); ;
+            CheckStatus(status);
 
             // write data from the input vectors to the buffers
             CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferInputImage, Bool.True, IntPtr.Zero, new IntPtr(dataSize), inputImageArray, 0, null, out var _));
+            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferGaussianKernel, Bool.True, IntPtr.Zero, new IntPtr(gaussianKernelDataSize), gaussianKernel, 0, null, out var _));
             // CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferOutputImage, Bool.True, IntPtr.Zero, new IntPtr(dataSize), outputImageArray, 0, null, out var _));
 
             // create the program
@@ -116,6 +121,7 @@ namespace HtcGaussianBlur
             // set the kernel arguments
             CheckStatus(Cl.SetKernelArg(kernel, 0, bufferInputImage));
             CheckStatus(Cl.SetKernelArg(kernel, 1, bufferOutputImage));
+            CheckStatus(Cl.SetKernelArg(kernel, 2, bufferGaussianKernel));
             // CheckStatus(Cl.SetKernelArg(kernel, 2, bufferC));
 
             // output device capabilities
@@ -157,14 +163,15 @@ namespace HtcGaussianBlur
             CheckStatus(Cl.EnqueueReadBuffer(commandQueue, bufferOutputImage, Bool.True, IntPtr.Zero, new IntPtr(dataSize), outputImageArray, 0, null, out var _));
 
             // output result
-            PrintVector(inputImageArray, elementSize, "Input Image");
-            PrintVector(outputImageArray, elementSize, "Output Image");
+            //PrintVector(inputImageArray, elementSize, "Input Image");
+            //PrintVector(outputImageArray, elementSize, "Output Image");
 
             // release opencl objects
             CheckStatus(Cl.ReleaseKernel(kernel));
             CheckStatus(Cl.ReleaseProgram(program));
             CheckStatus(Cl.ReleaseMemObject(bufferInputImage));
             CheckStatus(Cl.ReleaseMemObject(bufferOutputImage));
+            CheckStatus(Cl.ReleaseMemObject(bufferGaussianKernel));
             CheckStatus(Cl.ReleaseCommandQueue(commandQueue));
             CheckStatus(Cl.ReleaseContext(context));
             return inputImage;
