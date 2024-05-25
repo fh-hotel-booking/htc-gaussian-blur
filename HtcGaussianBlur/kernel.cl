@@ -13,7 +13,7 @@ __kernel void apply_gaussian_blur(
 	size_t height = get_global_size(1);
 	//if (x == 0)
 	// printf{
-	printf("%l, %l, %l, %l, %u\n", x, y, width, height, get_work_dim());
+	//printf("%i, %i, %i, %i, %u\n", x, y, width, height, get_work_dim());
 	//}
 	
 
@@ -29,5 +29,14 @@ __kernel void apply_gaussian_blur(
 		}
 	}
 
-	Output[x] = Input[x]; // convert_int3(sum);
+	
+	
+	Output[x + (height * y)] = Input[x + (height * y)]; // convert_int3(sum);
+	/*
+	if (x == 0 && y == 0) {
+		int id2 = 1;
+		printf("%d, %d, %d\n", Input[x * width + y].x, Input[id2].y, Input[id2].z);
+		printf("%d, %d, %d\n", Output[id2].x, Output[id2].y, Output[id2].z);
+		if()
+	}*/
 }

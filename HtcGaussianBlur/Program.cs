@@ -86,7 +86,7 @@ namespace OpenCLdotNet
                 for(int j = 0; j < bitmap.Height; j++)
                 {
                     var color = bitmap.GetPixel(i, j);
-                    result[i * bitmap.Width + j] = new int3(color.R, color.G, color.B);
+                    result[j + (i * bitmap.Height)] = new int3(color.R, color.G, color.B);
                 }
             }
             return result;
@@ -99,7 +99,7 @@ namespace OpenCLdotNet
             {
                 for (int j = 0; j < height; j++)
                 {
-                    var index = i * width + j;
+                    var index = j + (i * height);
                     var color = Color.FromArgb(255, array[index].s0, array[index].s1, array[index].s2);
                     bitmap.SetPixel(i, j, color);
                 }
