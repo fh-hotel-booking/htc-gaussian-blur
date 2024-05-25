@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.IO;
-using System.Reflection;
 using CommandLine;
-using CommandLine.Text;
 using HtcGaussianBlur;
 using OpenCL.Net;
 
@@ -16,6 +14,7 @@ namespace OpenCLdotNet
         static void Main(string[] args)
         {
             Image inputImage = null;
+            Bitmap inputBitmap = null;
             var gaussianFilterKernelSize = 0;
             var outputFilePath = "";
             var verboseOutput = false;
@@ -46,18 +45,19 @@ namespace OpenCLdotNet
                     try
                     {
                         inputImage = Bitmap.FromFile(parsedArgs.InputFilePath);
+                        inputBitmap = new Bitmap(inputImage);
                     } catch (Exception ex)
                     {
                         Console.WriteLine("Input filed could not be loaded!");
                         if (verboseOutput) {  Console.WriteLine(ex); }
                         return;
-                    } 
+                    }
                 });
-            byte[] outputImageBytes;
+            int3[][] outputImageArray;
             try
             {
-                var inputImageBytes = ImageToByteArray(inputImage);
-                outputImageBytes = OpenCl.ExecuteOpenCL(inputImageBytes, inputImage.Width, inputImage.Height, gaussianFilterKernelSize);
+                var inputImageArray = BitmapToInt3Array(inputBitmap);
+                outputImageArray = OpenCl.ExecuteOpenCL(inputImageArray, inputImage.Width, inputImage.Height, gaussianFilterKernelSize);
             }
             catch (Exception ex)
             {
@@ -67,7 +67,7 @@ namespace OpenCLdotNet
             }
             try
             {
-                var outputImage = ByteArrayToImage(outputImageBytes);
+                var outputImage = Int3ArrayToBitmap(outputImageArray);
                 outputImage.Save(outputFilePath);
             } catch(Exception ex)
             {
@@ -78,6 +78,36 @@ namespace OpenCLdotNet
             Console.WriteLine($"Success: Output Image has been saved to {outputFilePath}");
         }
 
+        public static int3[][] BitmapToInt3Array(Bitmap bitmap)
+        {
+            int3[][] result = new int3[bitmap.Width][];
+            for (int i = 0; i < bitmap.Width; i++)
+            {
+                result[i] = new int3[bitmap.Height];
+                for(int j = 0; j < bitmap.Height; j++)
+                {
+                    var color = bitmap.GetPixel(i, j);
+                    result[i][j] = new int3(color.R, color.G, color.B);
+                }
+            }
+            return result;
+        }
+
+        public static Bitmap Int3ArrayToBitmap(int3[][] array)
+        {
+            var width = array.Length;
+            var height = array[0].Length;
+            Bitmap bitmap = new Bitmap(width, height);
+            for (int i = 0; i < width; i++)
+            {
+                for (int j = 0; j < height; j++)
+                {
+                    var color = Color.FromArgb(255, array[i][j].s0, array[i][j].s1, array[i][j].s2);
+                    bitmap.SetPixel(i, j, color);
+                }
+            }
+            return bitmap;
+        }
 
         public static byte[] ImageToByteArray(Image imageIn)
         {

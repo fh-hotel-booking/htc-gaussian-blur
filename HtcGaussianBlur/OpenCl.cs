@@ -1,10 +1,6 @@
 ﻿using OpenCL.Net;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace HtcGaussianBlur
 {
@@ -34,7 +30,7 @@ namespace HtcGaussianBlur
             Console.WriteLine();
         }
 
-        public static byte[] ExecuteOpenCL(byte[] inputImage, int imageWidth, int imageHeight, int gaussianFilterKernelSize)
+        public static int3[][] ExecuteOpenCL(int3[][] inputImage, int imageWidth, int imageHeight, int gaussianFilterKernelSize)
         {
 
             // input and output arrays
