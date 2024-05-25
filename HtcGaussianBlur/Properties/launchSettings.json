@@ -2,7 +2,7 @@
   "profiles": {
     "HtcGaussianBlur": {
       "commandName": "Project",
-      "commandLineArgs": "-v -f \"C:\\Users\\flori\\Pictures\\Passfoto_Florian_Brunner.jpg\""
+      "commandLineArgs": "-v -f \"C:\\Users\\flori\\Pictures\\Input.jpg\""
     }
   }
 }

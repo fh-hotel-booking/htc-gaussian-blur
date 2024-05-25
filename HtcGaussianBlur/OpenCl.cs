@@ -30,16 +30,17 @@ namespace HtcGaussianBlur
             Console.WriteLine();
         }
 
-        public static int3[][] ExecuteOpenCL(int3[][] inputImage, int imageWidth, int imageHeight, int gaussianFilterKernelSize)
+        public static int3[] ExecuteOpenCL(int3[] inputImage, int imageWidth, int imageHeight, int gaussianFilterKernelSize)
         {
 
             // input and output arrays
             int elementSize = imageWidth * imageHeight;
-            int dataSize = elementSize * sizeof(byte);
-            byte[] inputImageArray = new byte[elementSize];
-            byte[] outputImageArray = new byte[elementSize];
+            int dataSize = elementSize * sizeof(int) * 3;
             double[] gaussianKernel = GaussianFilterKernel.getKernelBySize(gaussianFilterKernelSize);
-            int gaussianKernelDataSize = gaussianKernel.Length * sizeof(byte);
+            int gaussianKernelDataSize = gaussianKernel.Length * sizeof(double);
+
+            int3[] outputImageArray = new int3[elementSize];
+            
 
             // used for checking error status of api calls
             ErrorCode status;
@@ -83,17 +84,16 @@ namespace HtcGaussianBlur
             CheckStatus(status);
 
             // allocate two input and one output buffer for the three vectors
-            IMem<byte> bufferInputImage = Cl.CreateBuffer<byte>(context, MemFlags.ReadWrite, dataSize, out status);
+            IMem<int3> bufferInputImage = Cl.CreateBuffer<int3>(context, MemFlags.ReadOnly, dataSize, out status);
             CheckStatus(status);
-            IMem<byte> bufferOutputImage = Cl.CreateBuffer<byte>(context, MemFlags.ReadOnly, dataSize, out status); ;
+            IMem<int3> bufferOutputImage = Cl.CreateBuffer<int3>(context, MemFlags.WriteOnly, dataSize, out status); ;
             CheckStatus(status);
             IMem<double> bufferGaussianKernel = Cl.CreateBuffer<double>(context, MemFlags.ReadOnly, gaussianKernelDataSize, out status); ;
             CheckStatus(status);
 
             // write data from the input vectors to the buffers
-            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferInputImage, Bool.True, IntPtr.Zero, new IntPtr(dataSize), inputImageArray, 0, null, out var _));
+            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferInputImage, Bool.True, IntPtr.Zero, new IntPtr(dataSize), inputImage, 0, null, out var _));
             CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferGaussianKernel, Bool.True, IntPtr.Zero, new IntPtr(gaussianKernelDataSize), gaussianKernel, 0, null, out var _));
-            // CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferOutputImage, Bool.True, IntPtr.Zero, new IntPtr(dataSize), outputImageArray, 0, null, out var _));
 
             // create the program
             string programSource = File.ReadAllText(c_kernelFileName);
@@ -118,7 +118,7 @@ namespace HtcGaussianBlur
             CheckStatus(Cl.SetKernelArg(kernel, 0, bufferInputImage));
             CheckStatus(Cl.SetKernelArg(kernel, 1, bufferOutputImage));
             CheckStatus(Cl.SetKernelArg(kernel, 2, bufferGaussianKernel));
-            // CheckStatus(Cl.SetKernelArg(kernel, 2, bufferC));
+            CheckStatus(Cl.SetKernelArg(kernel, 3, gaussianFilterKernelSize));
 
             // output device capabilities
             IntPtr paramSize;
@@ -141,6 +141,7 @@ namespace HtcGaussianBlur
             }
 
             // TODO add check if 2-dimensional NDRange (using width and height of source image) is supported
+
             CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkItemSizes, IntPtr.Zero, InfoBuffer.Empty, out paramSize));
             InfoBuffer maxWorkItemSizesInfoBuffer = new InfoBuffer(paramSize);
             CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkItemSizes, paramSize, maxWorkItemSizesInfoBuffer, out paramSize));
@@ -153,6 +154,7 @@ namespace HtcGaussianBlur
             // execute the kernel
             // ndrange capabilities only need to be checked when we specify a local work group size manually
             // in our case we provide NULL as local work group size, which means groups get formed automatically
+            Console.WriteLine($"NDRange: {imageWidth}, {imageHeight}");
             CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 2, null, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(imageHeight) }, null, 0, null, out var _));
 
             // read the device output buffer to the host output array
@@ -170,7 +172,7 @@ namespace HtcGaussianBlur
             CheckStatus(Cl.ReleaseMemObject(bufferGaussianKernel));
             CheckStatus(Cl.ReleaseCommandQueue(commandQueue));
             CheckStatus(Cl.ReleaseContext(context));
-            return inputImage;
+            return outputImageArray;
         }
     }
 }
