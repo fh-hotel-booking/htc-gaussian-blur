@@ -68,7 +68,7 @@ namespace OpenCLdotNet
             try
             {
                 var outputImage = Int3ArrayToBitmap(outputImageArray, inputImage.Width, inputImage.Height);
-                outputImage.Save(outputFilePath);
+                outputImage.Save(outputFilePath, inputBitmap.RawFormat);
             } catch(Exception ex)
             {
                 Console.WriteLine("Output File could not be saved!");

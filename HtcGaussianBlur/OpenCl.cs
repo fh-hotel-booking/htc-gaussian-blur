@@ -1,5 +1,6 @@
 ﻿using OpenCL.Net;
 using System;
+using System.CodeDom;
 using System.IO;
 
 namespace HtcGaussianBlur
@@ -35,7 +36,7 @@ namespace HtcGaussianBlur
 
             // input and output arrays
             int elementSize = imageWidth * imageHeight;
-            int dataSize = elementSize * sizeof(int) * 3;
+            int dataSize = elementSize * TypeSize<int3>.Size.ToInt32();
             double[] gaussianKernel = GaussianFilterKernel.getKernelBySize(gaussianFilterKernelSize);
             int gaussianKernelDataSize = gaussianKernel.Length * sizeof(double);
 
@@ -84,16 +85,16 @@ namespace HtcGaussianBlur
             CheckStatus(status);
 
             // allocate two input and one output buffer for the three vectors
-            IMem<int3> bufferInputImage = Cl.CreateBuffer<int3>(context, MemFlags.ReadOnly, dataSize, out status);
+            IMem bufferInputImage = Cl.CreateBuffer(context, MemFlags.ReadOnly, new IntPtr(dataSize), out status);
             CheckStatus(status);
-            IMem<int3> bufferOutputImage = Cl.CreateBuffer<int3>(context, MemFlags.WriteOnly, dataSize, out status); ;
+            IMem bufferOutputImage = Cl.CreateBuffer(context, MemFlags.ReadWrite, new IntPtr(dataSize), out status);
             CheckStatus(status);
-            IMem<double> bufferGaussianKernel = Cl.CreateBuffer<double>(context, MemFlags.ReadOnly, gaussianKernelDataSize, out status); ;
+            IMem<double> bufferGaussianKernel = Cl.CreateBuffer<double>(context, MemFlags.ReadOnly, gaussianKernelDataSize, out status);
             CheckStatus(status);
 
             // write data from the input vectors to the buffers
             CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferInputImage, Bool.True, IntPtr.Zero, new IntPtr(dataSize), inputImage, 0, null, out var _));
-            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferGaussianKernel, Bool.True, IntPtr.Zero, new IntPtr(gaussianKernelDataSize), gaussianKernel, 0, null, out var _));
+            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferGaussianKernel, Bool.True, IntPtr.Zero, new IntPtr(gaussianFilterKernelSize), gaussianKernel, 0, null, out var _));
 
             // create the program
             string programSource = File.ReadAllText(c_kernelFileName);

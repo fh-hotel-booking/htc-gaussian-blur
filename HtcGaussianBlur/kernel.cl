@@ -16,7 +16,7 @@ __kernel void apply_gaussian_blur(
 	//printf("%i, %i, %i, %i, %u\n", x, y, width, height, get_work_dim());
 	//}
 	
-
+	/*
 	double3 sum = 0;
 	for (int i = 0; i < KernelSize; i++) {
 		for (int j = 0; j < KernelSize; j++) {
@@ -28,15 +28,19 @@ __kernel void apply_gaussian_blur(
 			sum += input * kvMatrix;
 		}
 	}
-
+	*/
 	
-	
-	Output[x + (height * y)] = Input[x + (height * y)]; // convert_int3(sum);
-	/*
-	if (x == 0 && y == 0) {
-		int id2 = 1;
-		printf("%d, %d, %d\n", Input[x * width + y].x, Input[id2].y, Input[id2].z);
+	int id2 = y + (height * x);
+	if ((id2) == 2) {
+		printf("%d\n", id2);
+		printf("%d, %d, %d\n", Input[id2].x, Input[id2].y, Input[id2].z);
 		printf("%d, %d, %d\n", Output[id2].x, Output[id2].y, Output[id2].z);
-		if()
-	}*/
+	}
+	// j + (i * bitmap.Height)
+	Output[y + (height * x)] = (Input[y + (height * x)]); // convert_int3(sum);
+	if ((id2)  == 2) {
+		printf("%d\n", id2);
+		printf("%d, %d, %d\n", Input[id2].x, Input[id2].y, Input[id2].z);
+		printf("%d, %d, %d\n", Output[id2].x, Output[id2].y, Output[id2].z);
+	}
 }
