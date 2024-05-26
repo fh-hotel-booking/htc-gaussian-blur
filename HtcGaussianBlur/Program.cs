@@ -53,11 +53,11 @@ namespace OpenCLdotNet
                         return;
                     }
                 });
-            int3[] outputImageArray;
+            int[] outputImageArray;
             try
             {
-                var inputImageArray = BitmapToInt3Array(inputBitmap);
-                outputImageArray = OpenCl.ExecuteOpenCL(inputImageArray, inputImage.Width, inputImage.Height, gaussianFilterKernelSize);
+                var inputImageArray = BitmapToIntArray(inputBitmap);
+                outputImageArray = OpenCl.ExecuteOpenCL(inputImageArray, inputBitmap.Width, inputBitmap.Height, gaussianFilterKernelSize);
             }
             catch (Exception ex)
             {
@@ -67,7 +67,7 @@ namespace OpenCLdotNet
             }
             try
             {
-                var outputImage = Int3ArrayToBitmap(outputImageArray, inputImage.Width, inputImage.Height);
+                var outputImage = IntArrayToBitmap(outputImageArray, inputImage.Width, inputImage.Height);
                 outputImage.Save(outputFilePath, inputBitmap.RawFormat);
             } catch(Exception ex)
             {
@@ -101,6 +101,38 @@ namespace OpenCLdotNet
                 {
                     var index = j + (i * height);
                     var color = Color.FromArgb(255, array[index].s0, array[index].s1, array[index].s2);
+                    bitmap.SetPixel(i, j, color);
+                }
+            }
+            return bitmap;
+        }
+
+        public static int[] BitmapToIntArray(Bitmap bitmap)
+        {
+            int[] result = new int[bitmap.Width * bitmap.Height * 3];
+            for (int i = 0; i < bitmap.Width; i++)
+            {
+                for (int j = 0; j < bitmap.Height; j++)
+                {
+                    var color = bitmap.GetPixel(i, j);
+                    var index = (j * 3) + (i * bitmap.Height * 3);
+                    result[index] = color.R;
+                    result[index + 1] = color.G;
+                    result[index + 2] = color.B;
+                }
+            }
+            return result;
+        }
+
+        public static Bitmap IntArrayToBitmap(int[] array, int width, int height)
+        {
+            Bitmap bitmap = new Bitmap(width, height);
+            for (int i = 0; i < width; i++)
+            {
+                for (int j = 0; j < height; j++)
+                {
+                    var index = (j * 3) + (i * height * 3);
+                    var color = Color.FromArgb(255, array[index], array[index+1], array[index+2]);
                     bitmap.SetPixel(i, j, color);
                 }
             }
