@@ -7,11 +7,13 @@ __kernel void apply_gaussian_blur(
 	__global const double *KernelMatrix,
 	const int KernelSize)
 {
-	const int3 original_value = vload3(y + (height * x), (int*)Input);
+	
 	size_t x = get_global_id(0);
 	size_t y = get_global_id(1);
 	size_t width = get_global_size(0);
 	size_t height = get_global_size(1);
+	
+	const int3 original_value = vload3(y + (height * x), (int*)Input);
 
 	//if (x == 0)
 	// printf{
