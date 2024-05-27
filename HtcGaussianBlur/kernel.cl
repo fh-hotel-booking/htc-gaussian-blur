@@ -7,10 +7,12 @@ __kernel void apply_gaussian_blur(
 	__global const double *KernelMatrix,
 	const int KernelSize)
 {
+	const int3 original_value = vload3(y + (height * x), (int*)Input);
 	size_t x = get_global_id(0);
 	size_t y = get_global_id(1);
 	size_t width = get_global_size(0);
 	size_t height = get_global_size(1);
+
 	//if (x == 0)
 	// printf{
 	//printf("%i, %i, %i, %i, %u\n", x, y, width, height, get_work_dim());
@@ -29,7 +31,10 @@ __kernel void apply_gaussian_blur(
 		}
 	}
 	*/
+
 	
+	vstore3(original_value, y + (height * x), (int*)Output);
+
 	int id2 = y + (height * x);
 	if ((id2) == 2) {
 		printf("%d\n", id2);
@@ -37,7 +42,7 @@ __kernel void apply_gaussian_blur(
 		printf("%d, %d, %d\n", Output[id2].x, Output[id2].y, Output[id2].z);
 	}
 	// j + (i * bitmap.Height)
-	Output[y + (height * x)] = (Input[y + (height * x)]); // convert_int3(sum);
+	//Output[y + (height * x)] = (Input[y + (height * x)]); // convert_int3(sum);
 	if ((id2)  == 2) {
 		printf("%d\n", id2);
 		printf("%d, %d, %d\n", Input[id2].x, Input[id2].y, Input[id2].z);
