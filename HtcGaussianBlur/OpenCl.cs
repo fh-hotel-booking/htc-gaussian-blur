@@ -1,6 +1,5 @@
 ﻿using OpenCL.Net;
 using System;
-using System.CodeDom;
 using System.IO;
 
 namespace HtcGaussianBlur
@@ -19,29 +18,17 @@ namespace HtcGaussianBlur
             }
         }
 
-        private static void PrintVector(byte[] vector, int elementSize, string label)
-        {
-            Console.WriteLine(label + ":");
-
-            for (int i = 0; i < elementSize; ++i)
-            {
-                Console.Write(vector[i] + " ");
-            }
-
-            Console.WriteLine();
-        }
-
-        public static int3[] ExecuteOpenCL(int3[] inputImage, int imageWidth, int imageHeight, int gaussianFilterKernelSize)
+        public static double3[] ExecuteOpenCL(double3[] inputImage, int imageWidth, int imageHeight, int gaussianFilterKernelSize)
         {
 
             // input and output arrays
             int elementSize = imageWidth * imageHeight;
-            int dataSize = elementSize * TypeSize<int3>.Size.ToInt32();
+            int dataSize = elementSize * TypeSize<double3>.Size.ToInt32();
             double[] gaussianKernel = GaussianFilterKernel.getKernelBySize(gaussianFilterKernelSize);
             int gaussianKernelDataSize = gaussianKernel.Length * sizeof(double);
 
-            int3[] outputImageArray = new int3[elementSize];
-            
+            double3[] outputImageArray = new double3[elementSize];
+
 
             // used for checking error status of api calls
             ErrorCode status;
@@ -85,16 +72,16 @@ namespace HtcGaussianBlur
             CheckStatus(status);
 
             // allocate two input and one output buffer for the three vectors
-            IMem bufferInputImage = Cl.CreateBuffer(context, MemFlags.ReadOnly, new IntPtr(dataSize), out status);
+            IMem<double3> bufferInputImage = Cl.CreateBuffer<double3>(context, MemFlags.ReadOnly, dataSize, out status);
             CheckStatus(status);
-            IMem bufferOutputImage = Cl.CreateBuffer(context, MemFlags.ReadWrite, new IntPtr(dataSize), out status);
+            IMem<double3> bufferOutputImage = Cl.CreateBuffer<double3>(context, MemFlags.ReadWrite, dataSize, out status);
             CheckStatus(status);
             IMem<double> bufferGaussianKernel = Cl.CreateBuffer<double>(context, MemFlags.ReadOnly, gaussianKernelDataSize, out status);
             CheckStatus(status);
 
             // write data from the input vectors to the buffers
-            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferInputImage, Bool.True, IntPtr.Zero, new IntPtr(dataSize), inputImage, 0, null, out var _));
-            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferGaussianKernel, Bool.True, IntPtr.Zero, new IntPtr(gaussianFilterKernelSize), gaussianKernel, 0, null, out var _));
+            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferInputImage, Bool.True, IntPtr.Zero, new IntPtr(dataSize), inputImage, 0, null, out Event _));
+            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferGaussianKernel, Bool.True, IntPtr.Zero, new IntPtr(gaussianFilterKernelSize), gaussianKernel, 0, null, out Event _));
 
             // create the program
             string programSource = File.ReadAllText(c_kernelFileName);
@@ -135,7 +122,7 @@ namespace HtcGaussianBlur
             int maxWorkItemDimensions = dimensionInfoBuffer.CastTo<int>();
             Console.WriteLine("Device Capabilities: Max work item dimensions: " + maxWorkItemDimensions);
             // check if ndRange can be at least 2-dimensional
-            if(maxWorkItemDimensions < 2)
+            if (maxWorkItemDimensions < 2)
             {
                 Console.WriteLine("Error: Device needs to support work items with 2 dimensions");
                 System.Environment.Exit(1);
@@ -149,17 +136,20 @@ namespace HtcGaussianBlur
             IntPtr[] maxWorkItemSizes = maxWorkItemSizesInfoBuffer.CastToArray<IntPtr>(maxWorkItemDimensions);
             Console.Write("Device Capabilities: Max work items in group per dimension:");
             for (int i = 0; i < maxWorkItemDimensions; ++i)
+            {
                 Console.Write(" " + i + ":" + maxWorkItemSizes[i]);
+            }
+
             Console.WriteLine();
 
             // execute the kernel
             // ndrange capabilities only need to be checked when we specify a local work group size manually
             // in our case we provide NULL as local work group size, which means groups get formed automatically
             Console.WriteLine($"NDRange: {imageWidth}, {imageHeight}");
-            CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 2, null, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(imageHeight) }, null, 0, null, out var _));
+            CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 2, null, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(imageHeight) }, null, 0, null, out Event _));
 
             // read the device output buffer to the host output array
-            CheckStatus(Cl.EnqueueReadBuffer(commandQueue, bufferOutputImage, Bool.True, IntPtr.Zero, new IntPtr(dataSize), outputImageArray, 0, null, out var _));
+            CheckStatus(Cl.EnqueueReadBuffer(commandQueue, bufferOutputImage, Bool.True, IntPtr.Zero, new IntPtr(dataSize), outputImageArray, 0, null, out Event _));
 
             // output result
             //PrintVector(inputImageArray, elementSize, "Input Image");
