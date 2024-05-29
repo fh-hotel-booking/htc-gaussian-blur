@@ -2,8 +2,8 @@
 * a kernel that add the elements of two vectors pairwise
 */
 __kernel void apply_gaussian_blur(
-	__global const double3 *Input,
-	__global double3 *Output,
+	__global const int3 *Input,
+	__global int3 *Output,
 	__global const double *KernelMatrix,
 	const int KernelSize)
 {
@@ -13,7 +13,7 @@ __kernel void apply_gaussian_blur(
 	size_t width = get_global_size(0);
 	size_t height = get_global_size(1);
 
-	const double3 original_value = vload3(y + (height * x), (double*)Input);
+	const int3 original_value = vload3(y + (height * x), (int*)Input);
 
 	//if (x == 0)
 	// printf{
@@ -43,9 +43,7 @@ __kernel void apply_gaussian_blur(
 			}
 			int kx = x - KernelSize / 2 + i;
 			int ky = y - KernelSize / 2 + j;
-
-			//index: [(x + kx)* height + (y + ky) ]
-			double3 input = original_value [(x + kx)* height + (y + ky) ];
+			double3 input = convert_double3(original_value[(x + kx)* height + (y + ky) ]);
 			sum += input * KernelMatrix[ky * KernelSize + kx];
 		}
 	}
