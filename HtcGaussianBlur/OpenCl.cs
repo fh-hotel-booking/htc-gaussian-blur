@@ -32,11 +32,12 @@ namespace HtcGaussianBlur
 
         public static int[] ExecuteOpenCL(int[] inputImage, int imageWidth, int imageHeight, int gaussianFilterKernelSize)
         {
+            Console.WriteLine($"Calling with Gaussian Filter Kernel Size: {gaussianFilterKernelSize}");
             // input and output arrays
             int elementSize = inputImage.Length;
             int singleElementInBytes = sizeof(int);
             int imageDataSize = elementSize * singleElementInBytes;
-            double[] gaussianKernel = GaussianFilterKernel.getKernelBySize(gaussianFilterKernelSize);
+            double[] gaussianKernel = GaussianFilterKernel.getKernelBySize(gaussianFilterKernelSize, 1.5);
             int gaussianKernelDataSize = gaussianKernel.Length * sizeof(double);
 
             int[] outputImageArray = new int[elementSize];

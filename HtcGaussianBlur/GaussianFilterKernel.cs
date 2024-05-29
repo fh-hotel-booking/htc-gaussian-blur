@@ -1,4 +1,6 @@
-﻿namespace HtcGaussianBlur
+﻿using System;
+
+namespace HtcGaussianBlur
 {
     internal static class GaussianFilterKernel
     {
@@ -23,6 +25,26 @@
             }
         }
 
+        public static double[] getKernelBySize(int size, double sigma = 1.0)
+        {
+            int size2 = size * size;
+            double[] kernel = new double[size2];
+            int radius = size / 2;
+            double sigma2 = sigma * sigma;
+            double normalization = 1.0f / (2.0f * Math.PI * sigma2);
+
+            for (int dy = -radius; dy <= radius; dy++)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    double distance2 = (dx * dx + dy * dy);
+                    int index = (dx + radius) * size + (dy + radius);
+                    kernel[index] = normalization * Math.Exp(-distance2 / (2.0 * sigma2));
+                }
+            }
+            return kernel;
+        }
+
         private static double[] kernel9 = {
             0.000000, 0.000001, 0.000007, 0.000032, 0.000053, 0.000032, 0.000007, 0.000001, 0.000000,
             0.000001, 0.000020, 0.000239, 0.001072, 0.001768, 0.001072, 0.000239, 0.000020, 0.000001,
@@ -34,7 +56,7 @@
             0.000001, 0.000020, 0.000239, 0.001072, 0.001768, 0.001072, 0.000239, 0.000020, 0.000001,
             0.000000, 0.000001, 0.000007, 0.000032, 0.000053, 0.000032, 0.000007, 0.000001, 0.000000,
         };
-        private static double[] kernel8 = {
+        private static double[] kernel8 = { 
             0.000001, 0.000015, 0.000113, 0.000307, 0.000307, 0.000113, 0.000015, 0.000001,
             0.000015, 0.000307, 0.002270, 0.006172, 0.006172, 0.002270, 0.000307, 0.000015,
             0.000113, 0.002270, 0.016776, 0.045602, 0.045602, 0.016776, 0.002270, 0.000113,
