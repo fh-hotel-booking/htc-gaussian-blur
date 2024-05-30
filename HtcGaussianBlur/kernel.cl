@@ -1,10 +1,7 @@
-/*
-* a kernel that add the elements of two vectors pairwise
-*/
 __kernel void apply_gaussian_blur(
-	__global const int3 *Input,
-	__global int3 *Output,
-	__global const double *KernelMatrix,
+	__global const int* Input,
+	__global int* Output,
+	__global const double* KernelMatrix,
 	const int KernelSize)
 {
 	
@@ -13,54 +10,47 @@ __kernel void apply_gaussian_blur(
 	size_t width = get_global_size(0);
 	size_t height = get_global_size(1);
 
-	const int3 original_value = vload3(y + (height * x), (int*)Input);
+	int index = (y * width + x) * 3;
+	int idColor1 = index;
+	int idColor2 = idColor1 + 1;
+	int idColor3 = idColor1 + 2;
 
-	//if (x == 0)
-	// printf{
-	//printf("%i, %i, %i, %i, %u\n", x, y, width, height, get_work_dim());
-	//}
+	double sumColor1 = 0;
+	double sumColor2 = 0;
+	double sumColor3 = 0;
 
-	// printf("KernelSize: %d\n", KernelSize);
-	
-	double3 sum = 0;
-	for (int i = 0; i < KernelSize-1; i++) {
-		for (int j = 0; j < KernelSize-1; j++) {
-			if(x == 0) {
-				//TODO: clamping
-				continue;
+	int halfKernelSize = KernelSize / 2;
+
+
+	for (int dx = -halfKernelSize; dx <= halfKernelSize; dx++) {
+		for (int dy = -halfKernelSize; dy <= halfKernelSize; dy++) {
+
+			int neighborX = x + dx;
+			int neighborY = y + dy;
+
+			if (neighborX < 0) {
+				neighborX = 0;
 			}
-			if(y == 0) {
-				//TODO: clamping
-				continue;
+			else if (neighborX >= width) {
+				neighborX = width - 1;
 			}
-			if(x == height-1) {
-				//TODO: clamping
-				continue;
+
+			if (neighborY < 0) {
+				neighborY = 0;
 			}
-			if(y == width -1){
-				//TODO: clamping
-				continue;
+			else if (neighborY >= height) {
+				neighborY = height - 1;
 			}
-			int kx = x - KernelSize / 2 + i;
-			int ky = y - KernelSize / 2 + j;
-			double3 input = convert_double3(original_value[(x + kx)* height + (y + ky) ]);
-			sum += input * KernelMatrix[ky * KernelSize + kx];
+
+			double kv = KernelMatrix[(dx + halfKernelSize) * KernelSize + (dy + halfKernelSize)];
+
+			int neighborIndex = (neighborY * width + neighborX) * 3;
+			sumColor1 += Input[neighborIndex] * kv;
+			sumColor2 += Input[neighborIndex + 1] * kv;
+			sumColor3 += Input[neighborIndex + 2] * kv;
 		}
 	}
-	
-	vstore3(convert_int3(sum), y + (height * x), (int*)Output);
-
-	// int id2 = y + (height * x);
-	// if ((id2) == 2) {
-	// 	printf("%d\n", id2);
-	// 	printf("%d, %d, %d\n", Input[id2].x, Input[id2].y, Input[id2].z);
-	// 	printf("%d, %d, %d\n", Output[id2].x, Output[id2].y, Output[id2].z);
-	// }
-	// j + (i * bitmap.Height)
-	//Output[y + (height * x)] = (Input[y + (height * x)]); // convert_int3(sum);
-	// if ((id2)  == 2) {
-	// 	printf("%d\n", id2);
-	// 	printf("%d, %d, %d\n", Input[id2].x, Input[id2].y, Input[id2].z);
-	// 	printf("%d, %d, %d\n", Output[id2].x, Output[id2].y, Output[id2].z);
-	// }
+	Output[idColor1] = convert_int(sumColor1);
+	Output[idColor2] = convert_int(sumColor2);
+	Output[idColor3] = convert_int(sumColor3);
 }

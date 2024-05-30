@@ -1,8 +1,8 @@
 {
-  "profiles": {
-    "HtcGaussianBlur": {
-      "commandName": "Project",
-      "commandLineArgs": "-v -f \"C:\\Users\\flori\\Pictures\\Input.jpg\""
-    }
-  }
+	"profiles": {
+		"HtcGaussianBlur": {
+			"commandName": "Project",
+			"commandLineArgs": "-v -f {YOUR_PATH}"
+		}
+	}
 }

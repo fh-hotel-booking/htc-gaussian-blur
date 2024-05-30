@@ -25,7 +25,7 @@ namespace OpenCLdotNet
                         verboseOutput = true;
                     }
                     gaussianFilterKernelSize = parsedArgs.GaussianFilterKernelSize;
-                    if(parsedArgs.GaussianFilterKernelSize <= 0 || parsedArgs.GaussianFilterKernelSize > 9)
+                    if(parsedArgs.GaussianFilterKernelSize <= 1 || parsedArgs.GaussianFilterKernelSize > 9 || parsedArgs.GaussianFilterKernelSize % 2 == 0)
                     {
                         Console.WriteLine("Gaussian gilter kernel is outside range! - it is being set to 9");
                         gaussianFilterKernelSize = 9;
@@ -39,8 +39,8 @@ namespace OpenCLdotNet
                     
                     if(!File.Exists(parsedArgs.InputFilePath))
                     {
-                        Console.WriteLine("Input filed could not be found!");
-                        return;
+                        Console.WriteLine("Input file could not be found!");
+                        System.Environment.Exit(1);
                     }
                     try
                     {
@@ -48,16 +48,16 @@ namespace OpenCLdotNet
                         inputBitmap = new Bitmap(inputImage);
                     } catch (Exception ex)
                     {
-                        Console.WriteLine("Input filed could not be loaded!");
+                        Console.WriteLine("Input file could not be loaded!");
                         if (verboseOutput) {  Console.WriteLine(ex); }
-                        return;
+                        System.Environment.Exit(1);
                     }
                 });
-            int3[] outputImageArray;
+            int[] outputImageArray;
             try
             {
-                var inputImageArray = BitmapToInt3Array(inputBitmap);
-                outputImageArray = OpenCl.ExecuteOpenCL(inputImageArray, inputImage.Width, inputImage.Height, gaussianFilterKernelSize);
+                var inputImageArray = BitmapToIntArray(inputBitmap);
+                outputImageArray = OpenCl.ExecuteOpenCL(inputImageArray, inputBitmap.Width, inputBitmap.Height, gaussianFilterKernelSize);
             }
             catch (Exception ex)
             {
@@ -67,7 +67,7 @@ namespace OpenCLdotNet
             }
             try
             {
-                var outputImage = Int3ArrayToBitmap(outputImageArray, inputImage.Width, inputImage.Height);
+                var outputImage = IntArrayToBitmap(outputImageArray, inputImage.Width, inputImage.Height);
                 outputImage.Save(outputFilePath, inputBitmap.RawFormat);
             } catch(Exception ex)
             {
@@ -78,47 +78,36 @@ namespace OpenCLdotNet
             Console.WriteLine($"Success: Output Image has been saved to {outputFilePath}");
         }
 
-        public static int3[] BitmapToInt3Array(Bitmap bitmap)
+        public static int[] BitmapToIntArray(Bitmap bitmap)
         {
-            int3[] result = new int3[bitmap.Width * bitmap.Height];
-            for (int i = 0; i < bitmap.Width; i++)
+            int[] result = new int[bitmap.Width * bitmap.Height * 3];
+            for (int y = 0; y < bitmap.Height; y++)
             {
-                for(int j = 0; j < bitmap.Height; j++)
+                for (int x = 0; x < bitmap.Width; x++)
                 {
-                    var color = bitmap.GetPixel(i, j);
-                    result[j + (i * bitmap.Height)] = new int3(color.R, color.G, color.B);
+                    var color = bitmap.GetPixel(x, y);
+                    var index = (x + y * bitmap.Width) * 3;
+                    result[index] = color.R;
+                    result[index + 1] = color.G;
+                    result[index + 2] = color.B;
                 }
             }
             return result;
         }
 
-        public static Bitmap Int3ArrayToBitmap(int3[] array, int width, int height)
+        public static Bitmap IntArrayToBitmap(int[] array, int width, int height)
         {
             Bitmap bitmap = new Bitmap(width, height);
-            for (int i = 0; i < width; i++)
+            for (int y = 0; y < height; y++)
             {
-                for (int j = 0; j < height; j++)
+                for (int x = 0; x < width; x++)
                 {
-                    var index = j + (i * height);
-                    var color = Color.FromArgb(255, array[index].s0, array[index].s1, array[index].s2);
-                    bitmap.SetPixel(i, j, color);
+                    var index = (x + y * width) * 3;
+                    var color = Color.FromArgb(255, array[index], array[index+1], array[index+2]);
+                    bitmap.SetPixel(x, y, color);
                 }
             }
             return bitmap;
-        }
-
-        public static byte[] ImageToByteArray(Image imageIn)
-        {
-            MemoryStream memoryStream = new MemoryStream();
-            imageIn.Save(memoryStream, imageIn.RawFormat);
-            return memoryStream.ToArray();
-        }
-
-        public static Image ByteArrayToImage(byte[] byteArrayIn)
-        {
-            var memoryStream = new MemoryStream(byteArrayIn);
-            var returnImage = Image.FromStream(memoryStream, useEmbeddedColorManagement: true, validateImageData: true);
-            return returnImage;
         }
     }
 }

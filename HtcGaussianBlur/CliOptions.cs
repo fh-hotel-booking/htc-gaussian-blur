@@ -13,7 +13,7 @@ namespace HtcGaussianBlur
         [Option('o', "output", Required = false, HelpText = "Image output file path.")]
         public string OutputFilePath { get; set; }
 
-        [Option('s', "gaussian-filter-kernel-size", Required = false, Default = 9, HelpText = "Kernel size of Gaussian Filter (range 1-9")]
+        [Option('s', "gaussian-filter-kernel-size", Required = false, Default = 9, HelpText = "Kernel size of Gaussian Filter")]
         public int GaussianFilterKernelSize { get; set; }
     }
 }
