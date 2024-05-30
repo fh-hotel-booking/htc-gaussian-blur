@@ -2,7 +2,7 @@
   "profiles": {
     "HtcGaussianBlur": {
       "commandName": "Project",
-      "commandLineArgs": "-v -f \"C:\\Users\\flori\\Pictures\\pexels-photo-1525041.jpeg\" -s 5"
+      "commandLineArgs": "-v -f \"..\\..\\..\\..\\Input.jpg\""
     }
   }
 }
