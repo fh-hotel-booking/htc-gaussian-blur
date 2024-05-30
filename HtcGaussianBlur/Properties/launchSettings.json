@@ -2,7 +2,7 @@
   "profiles": {
     "HtcGaussianBlur": {
       "commandName": "Project",
-      "commandLineArgs": "-v -f \"C:\\Users\\flori\\Pictures\\testste.jpeg\" -s 7"
+      "commandLineArgs": "-v -f \"C:\\Users\\flori\\Pictures\\Input.png\""
     }
   }
 }

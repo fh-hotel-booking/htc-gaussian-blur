@@ -37,7 +37,7 @@ namespace HtcGaussianBlur
             int elementSize = inputImage.Length;
             int singleElementInBytes = sizeof(int);
             int imageDataSize = elementSize * singleElementInBytes;
-            double[] gaussianKernel = GaussianFilterKernel.getKernelBySize(gaussianFilterKernelSize, 1.5);
+            double[] gaussianKernel = GaussianFilterKernel.getKernelBySize(gaussianFilterKernelSize);
             int gaussianKernelDataSize = gaussianKernel.Length * sizeof(double);
 
             int[] outputImageArray = new int[elementSize];
@@ -102,7 +102,7 @@ namespace HtcGaussianBlur
 
             // create the program
             string programSource = File.ReadAllText(c_kernelFileName);
-            OpenCL.Net.Program program = Cl.CreateProgramWithSource(context, 1, new string[] { programSource }, null, out status);
+            Program program = Cl.CreateProgramWithSource(context, 1, new string[] { programSource }, null, out status);
             CheckStatus(status);
 
             // build the program
@@ -116,7 +116,7 @@ namespace HtcGaussianBlur
             }
 
             // create the vector addition kernel
-            OpenCL.Net.Kernel kernel = Cl.CreateKernel(program, c_kernelProgramName, out status);
+            Kernel kernel = Cl.CreateKernel(program, c_kernelProgramName, out status);
             CheckStatus(status);
 
             // set the kernel arguments
@@ -153,27 +153,12 @@ namespace HtcGaussianBlur
             for (int i = 0; i < maxWorkItemDimensions; ++i)
                 Console.Write(" " + i + ":" + maxWorkItemSizes[i]);
             Console.WriteLine();
-
-            // TODO add check if 2-dimensional NDRange (using width and height of source image) is supported
-            /*
-            if (maxWorkItemSizes[0].ToInt32() < imageWidth || maxWorkItemSizes[1].ToInt32() < imageHeight)
-            {
-                Console.WriteLine("Error: Device does not support big enough ndsize for the image");
-                System.Environment.Exit(1);
-            }
-            */
             // execute the kernel
-            // ndrange capabilities only need to be checked when we specify a local work group size manually
-            // in our case we provide NULL as local work group size, which means groups get formed automatically
             Console.WriteLine($"NDRange: {imageWidth}, {imageHeight}");
             CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 2, null, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(imageHeight) }, null, 0, null, out var _));
 
             // read the device output buffer to the host output array
             CheckStatus(Cl.EnqueueReadBuffer(commandQueue, bufferOutputImage, Bool.True, IntPtr.Zero, new IntPtr(imageDataSize), outputImageArray, 0, null, out var _));
-
-            // output result
-            //PrintVector(inputImageArray, elementSize, "Input Image");
-            //PrintVector(outputImageArray, elementSize, "Output Image");
 
             // release opencl objects
             CheckStatus(Cl.ReleaseKernel(kernel));

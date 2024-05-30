@@ -17,9 +17,9 @@ __kernel void apply_gaussian_blur(
 	double sumColor1 = 0;
 	double sumColor2 = 0;
 	double sumColor3 = 0;
-	double sumKv = 0;
 
 	int halfKernelSize = KernelSize / 2;
+
 
 	for (int dx = -halfKernelSize; dx <= halfKernelSize; dx++) {
 		for (int dy = -halfKernelSize; dy <= halfKernelSize; dy++) {
@@ -27,11 +27,19 @@ __kernel void apply_gaussian_blur(
 			int neighborX = x + dx;
 			int neighborY = y + dy;
 
-			if (neighborX < 0) neighborX = 0;
-			else if (neighborX >= width) neighborX = width - 1;
+			if (neighborX < 0) {
+				neighborX = 0;
+			}
+			else if (neighborX >= width) {
+				neighborX = width - 1;
+			}
 
-			if (neighborY < 0) neighborY = 0;
-			else if (neighborY >= height) neighborY = height - 1;
+			if (neighborY < 0) {
+				neighborY = 0;
+			}
+			else if (neighborY >= height) {
+				neighborY = height - 1;
+			}
 
 			double kv = KernelMatrix[(dx + halfKernelSize) * KernelSize + (dy + halfKernelSize)];
 
@@ -39,13 +47,11 @@ __kernel void apply_gaussian_blur(
 			sumColor1 += Input[neighborIndex] * kv;
 			sumColor2 += Input[neighborIndex + 1] * kv;
 			sumColor3 += Input[neighborIndex + 2] * kv;
-			sumKv += kv;
 		}
 	}
-
-	Output[idColor1] = (int)(sumColor1 / sumKv);
-	Output[idColor2] = (int)(sumColor2 / sumKv);
-	Output[idColor3] = (int)(sumColor3 / sumKv);
+	Output[idColor1] = convert_int(sumColor1);
+	Output[idColor2] = convert_int(sumColor2);
+	Output[idColor3] = convert_int(sumColor3);
 }
 /*
 * 
