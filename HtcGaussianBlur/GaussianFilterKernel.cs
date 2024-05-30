@@ -11,7 +11,7 @@ namespace HtcGaussianBlur
         /// <returns>gaussian blure kernel of specified size</returns>
         public static double[] GetKernelBySize(int size)
         {
-            switch(size)
+            switch (size)
             {
                 case 3: return kernel3;
                 case 5: return kernel5;

@@ -33,7 +33,7 @@ namespace HtcGaussianBlur
             {
                 outputImageArray[i] = 0;
             }
-            
+
 
             // used for checking error status of api calls
             ErrorCode status;
@@ -85,12 +85,12 @@ namespace HtcGaussianBlur
             CheckStatus(status);
 
             // write data from the input vectors to the buffers
-            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferInputImage, Bool.True, IntPtr.Zero, new IntPtr(imageDataSize), inputImage, 0, null, out var _));
-            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferGaussianKernel, Bool.True, IntPtr.Zero, new IntPtr(gaussianKernelDataSize), gaussianKernel, 0, null, out var _));
+            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferInputImage, Bool.True, IntPtr.Zero, new IntPtr(imageDataSize), inputImage, 0, null, out Event _));
+            CheckStatus(Cl.EnqueueWriteBuffer(commandQueue, bufferGaussianKernel, Bool.True, IntPtr.Zero, new IntPtr(gaussianKernelDataSize), gaussianKernel, 0, null, out Event _));
 
             // create the program
             string programSource = File.ReadAllText(c_kernelFileName);
-            Program program = Cl.CreateProgramWithSource(context, 1, new string[] { programSource }, null, out status);
+            OpenCL.Net.Program program = Cl.CreateProgramWithSource(context, 1, new string[] { programSource }, null, out status);
             CheckStatus(status);
 
             // build the program
@@ -121,7 +121,7 @@ namespace HtcGaussianBlur
             int maxWorkItemDimensions = dimensionInfoBuffer.CastTo<int>();
             Console.WriteLine("Device Capabilities: Max work item dimensions: " + maxWorkItemDimensions);
             // check if ndRange can be at least 2-dimensional
-            if(maxWorkItemDimensions < 2)
+            if (maxWorkItemDimensions < 2)
             {
                 Console.WriteLine("Error: Device needs to support work items with 2 dimensions");
                 System.Environment.Exit(1);
@@ -129,10 +129,10 @@ namespace HtcGaussianBlur
 
             // execute the kernel
             Console.WriteLine($"NDRange: {imageWidth}, {imageHeight}");
-            CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 2, null, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(imageHeight) }, null, 0, null, out var _));
+            CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 2, null, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(imageHeight) }, null, 0, null, out Event _));
 
             // read the device output buffer to the host output array
-            CheckStatus(Cl.EnqueueReadBuffer(commandQueue, bufferOutputImage, Bool.True, IntPtr.Zero, new IntPtr(imageDataSize), outputImageArray, 0, null, out var _));
+            CheckStatus(Cl.EnqueueReadBuffer(commandQueue, bufferOutputImage, Bool.True, IntPtr.Zero, new IntPtr(imageDataSize), outputImageArray, 0, null, out Event _));
 
             // release opencl objects
             CheckStatus(Cl.ReleaseKernel(kernel));
