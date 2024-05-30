@@ -25,7 +25,7 @@ namespace OpenCLdotNet
                         verboseOutput = true;
                     }
                     gaussianFilterKernelSize = parsedArgs.GaussianFilterKernelSize;
-                    if(parsedArgs.GaussianFilterKernelSize <= 1 || parsedArgs.GaussianFilterKernelSize > 9 || parsedArgs.GaussianFilterKernelSize % 2 == 1)
+                    if(parsedArgs.GaussianFilterKernelSize <= 1 || parsedArgs.GaussianFilterKernelSize > 9 || parsedArgs.GaussianFilterKernelSize % 2 == 0)
                     {
                         Console.WriteLine("Gaussian gilter kernel is outside range! - it is being set to 9");
                         gaussianFilterKernelSize = 9;
