@@ -18,18 +18,6 @@ namespace HtcGaussianBlur
             }
         }
 
-        private static void PrintVector(byte[] vector, int elementSize, string label)
-        {
-            Console.WriteLine(label + ":");
-
-            for (int i = 0; i < elementSize; ++i)
-            {
-                Console.Write(vector[i] + " ");
-            }
-
-            Console.WriteLine();
-        }
-
         public static int[] ExecuteOpenCL(int[] inputImage, int imageWidth, int imageHeight, int gaussianFilterKernelSize)
         {
             Console.WriteLine($"Calling with Gaussian Filter Kernel Size: {gaussianFilterKernelSize}");
@@ -37,11 +25,11 @@ namespace HtcGaussianBlur
             int elementSize = inputImage.Length;
             int singleElementInBytes = sizeof(int);
             int imageDataSize = elementSize * singleElementInBytes;
-            double[] gaussianKernel = GaussianFilterKernel.getKernelBySize(gaussianFilterKernelSize);
+            double[] gaussianKernel = GaussianFilterKernel.GetKernelBySize(gaussianFilterKernelSize);
             int gaussianKernelDataSize = gaussianKernel.Length * sizeof(double);
 
             int[] outputImageArray = new int[elementSize];
-            for(int i = 0; i < elementSize; i++)
+            for (int i = 0; i < elementSize; i++)
             {
                 outputImageArray[i] = 0;
             }
@@ -125,14 +113,8 @@ namespace HtcGaussianBlur
             CheckStatus(Cl.SetKernelArg(kernel, 2, bufferGaussianKernel));
             CheckStatus(Cl.SetKernelArg(kernel, 3, gaussianFilterKernelSize));
 
-            // output device capabilities
             IntPtr paramSize;
-            CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkGroupSize, IntPtr.Zero, InfoBuffer.Empty, out paramSize));
-            InfoBuffer maxWorkGroupSizeBuffer = new InfoBuffer(paramSize);
-            CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkGroupSize, paramSize, maxWorkGroupSizeBuffer, out paramSize));
-            int maxWorkGroupSize = maxWorkGroupSizeBuffer.CastTo<int>();
-            Console.WriteLine("Device Capabilities: Max work items in single group: " + maxWorkGroupSize);
-
+            // get maxWorkItemDimensions
             CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkItemDimensions, IntPtr.Zero, InfoBuffer.Empty, out paramSize));
             InfoBuffer dimensionInfoBuffer = new InfoBuffer(paramSize);
             CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkItemDimensions, paramSize, dimensionInfoBuffer, out paramSize));
@@ -145,14 +127,6 @@ namespace HtcGaussianBlur
                 System.Environment.Exit(1);
             }
 
-            CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkItemSizes, IntPtr.Zero, InfoBuffer.Empty, out paramSize));
-            InfoBuffer maxWorkItemSizesInfoBuffer = new InfoBuffer(paramSize);
-            CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkItemSizes, paramSize, maxWorkItemSizesInfoBuffer, out paramSize));
-            IntPtr[] maxWorkItemSizes = maxWorkItemSizesInfoBuffer.CastToArray<IntPtr>(maxWorkItemDimensions);
-            Console.Write("Device Capabilities: Max work items in group per dimension:");
-            for (int i = 0; i < maxWorkItemDimensions; ++i)
-                Console.Write(" " + i + ":" + maxWorkItemSizes[i]);
-            Console.WriteLine();
             // execute the kernel
             Console.WriteLine($"NDRange: {imageWidth}, {imageHeight}");
             CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 2, null, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(imageHeight) }, null, 0, null, out var _));

@@ -25,7 +25,7 @@ namespace OpenCLdotNet
                         verboseOutput = true;
                     }
                     gaussianFilterKernelSize = parsedArgs.GaussianFilterKernelSize;
-                    if(parsedArgs.GaussianFilterKernelSize <= 0 || parsedArgs.GaussianFilterKernelSize > 9)
+                    if(parsedArgs.GaussianFilterKernelSize <= 1 || parsedArgs.GaussianFilterKernelSize > 9 || parsedArgs.GaussianFilterKernelSize % 2 == 1)
                     {
                         Console.WriteLine("Gaussian gilter kernel is outside range! - it is being set to 9");
                         gaussianFilterKernelSize = 9;
@@ -39,8 +39,8 @@ namespace OpenCLdotNet
                     
                     if(!File.Exists(parsedArgs.InputFilePath))
                     {
-                        Console.WriteLine("Input filed could not be found!");
-                        return;
+                        Console.WriteLine("Input file could not be found!");
+                        System.Environment.Exit(1);
                     }
                     try
                     {
@@ -48,9 +48,9 @@ namespace OpenCLdotNet
                         inputBitmap = new Bitmap(inputImage);
                     } catch (Exception ex)
                     {
-                        Console.WriteLine("Input filed could not be loaded!");
+                        Console.WriteLine("Input file could not be loaded!");
                         if (verboseOutput) {  Console.WriteLine(ex); }
-                        return;
+                        System.Environment.Exit(1);
                     }
                 });
             int[] outputImageArray;
