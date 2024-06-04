@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace HtcGaussianBlur
+namespace HpcGaussianBlur
 {
     internal static class GaussianFilterKernel
     {

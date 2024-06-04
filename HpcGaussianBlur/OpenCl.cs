@@ -2,7 +2,7 @@
 using System;
 using System.IO;
 
-namespace HtcGaussianBlur
+namespace HpcGaussianBlur
 {
     public static class OpenCl
     {

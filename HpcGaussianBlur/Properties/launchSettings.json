@@ -1,0 +1,8 @@
+{
+	"profiles": {
+		"HpcGaussianBlur": {
+			"commandName": "Project",
+			"commandLineArgs": "-v -f {YOUR PATH}"
+		}
+	}
+}

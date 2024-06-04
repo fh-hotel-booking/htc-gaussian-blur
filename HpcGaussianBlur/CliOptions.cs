@@ -1,6 +1,6 @@
 ﻿using CommandLine;
 
-namespace HtcGaussianBlur
+namespace HpcGaussianBlur
 {
     public class CliOptions
     {

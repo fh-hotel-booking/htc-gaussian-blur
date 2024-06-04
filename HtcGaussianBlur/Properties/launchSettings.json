@@ -1,8 +1,0 @@
-{
-	"profiles": {
-		"HtcGaussianBlur": {
-			"commandName": "Project",
-			"commandLineArgs": "-v -f {YOUR_PATH}"
-		}
-	}
-}
