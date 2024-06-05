@@ -2,7 +2,7 @@
 	"profiles": {
 		"HpcGaussianBlur": {
 			"commandName": "Project",
-			"commandLineArgs": "-v -f {YOUR PATH}"
+			"commandLineArgs": "-v -f \"..//..//..//..//test4.jpg\""
 		}
 	}
 }

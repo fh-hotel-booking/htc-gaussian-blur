@@ -111,7 +111,9 @@ namespace HpcGaussianBlur
             CheckStatus(Cl.SetKernelArg(kernel, 0, bufferInputImage));
             CheckStatus(Cl.SetKernelArg(kernel, 1, bufferOutputImage));
             CheckStatus(Cl.SetKernelArg(kernel, 2, bufferGaussianKernel));
-            CheckStatus(Cl.SetKernelArg(kernel, 3, gaussianFilterKernelSize));
+            CheckStatus(Cl.SetKernelArg(kernel, 3, new IntPtr(imageWidth * sizeof(int) * 3), null));
+            CheckStatus(Cl.SetKernelArg(kernel, 4, gaussianFilterKernelSize));
+            CheckStatus(Cl.SetKernelArg(kernel, 5, 0));
 
             IntPtr paramSize;
             // get maxWorkItemDimensions
@@ -127,9 +129,36 @@ namespace HpcGaussianBlur
                 System.Environment.Exit(1);
             }
 
+            CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkItemSizes, IntPtr.Zero, InfoBuffer.Empty, out paramSize));
+            InfoBuffer maxWorkItemSizesInfoBuffer = new InfoBuffer(paramSize);
+            CheckStatus(Cl.GetDeviceInfo(device, DeviceInfo.MaxWorkItemSizes, paramSize, maxWorkItemSizesInfoBuffer, out paramSize));
+            IntPtr[] maxWorkItemSizes = maxWorkItemSizesInfoBuffer.CastToArray<IntPtr>(maxWorkItemDimensions);
+            Console.Write("Device Capabilities: Max work items in group per dimension:");
+            for (int i = 0; i < maxWorkItemDimensions; ++i)
+                Console.Write(" " + i + ":" + maxWorkItemSizes[i]);
+            Console.WriteLine();
+
+            InfoBuffer maxWorkItemsSizeInfoBuffer = new InfoBuffer(maxWorkItemSizes[0]);
+            int maxWorkItemsSizeInfo =maxWorkItemSizesInfoBuffer.CastTo<int>();
+            if (maxWorkItemsSizeInfo < imageWidth)
+            {
+                Console.WriteLine("Error: Device needs to support work group size of image width");
+                System.Environment.Exit(1);
+            }
+            if (maxWorkItemsSizeInfo < imageHeight)
+            {
+                Console.WriteLine("Error: Device needs to support work group size of image height");
+                System.Environment.Exit(1);
+            }
+
             // execute the kernel
             Console.WriteLine($"NDRange: {imageWidth}, {imageHeight}");
-            CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 2, null, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(imageHeight) }, null, 0, null, out Event _));
+            CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 2, null, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(imageHeight) }, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(1) }, 0, null, out Event _));
+
+            // maybe sychronize
+            CheckStatus(Cl.SetKernelArg(kernel, 3, new IntPtr(imageHeight * sizeof(int) * 3), null));
+            CheckStatus(Cl.SetKernelArg(kernel, 5, 1));
+            CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 2, null, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(imageHeight) }, new IntPtr[] { new IntPtr(imageHeight), new IntPtr(1) }, 0, null, out Event _));
 
             // read the device output buffer to the host output array
             CheckStatus(Cl.EnqueueReadBuffer(commandQueue, bufferOutputImage, Bool.True, IntPtr.Zero, new IntPtr(imageDataSize), outputImageArray, 0, null, out Event _));
