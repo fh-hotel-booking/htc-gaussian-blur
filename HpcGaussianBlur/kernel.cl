@@ -69,7 +69,7 @@ __kernel void apply_gaussian_blur(
 		}
 	*/
 
-	if (ExecuteColumnWise == 0) {
+	if (ExecuteColumnWise == 0) { // execute row wise
 		
 		for (int dx = -halfKernelSize; dx <= halfKernelSize; dx++) {
 			int neighborX = x + dx;
@@ -89,7 +89,7 @@ __kernel void apply_gaussian_blur(
 			sumColor3 += Input[neighborIndex + 2] * kv;
 		}
 	}
-	else {
+	else { // execute column wise
 		for (int dy = -halfKernelSize; dy <= halfKernelSize; dy++) {
 			int neighborY = y + dy;
 
