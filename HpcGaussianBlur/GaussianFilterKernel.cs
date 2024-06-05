@@ -16,8 +16,8 @@ namespace HpcGaussianBlur
                 case 3: return kernel3;
                 case 5: return kernel5;
                 case 7: return kernel7;
-                case 9: return kernel9;
-                default: return kernel9;
+                case 9: return kernelOptimized9;
+                default: return kernelOptimized9;
             }
         }
 
@@ -40,6 +40,11 @@ namespace HpcGaussianBlur
             }
             return kernel;
         }
+
+        private static readonly double[] kernelOptimized9 =
+        {
+            0.000134, 0.004432, 0.053991, 0.241971, 0.398943, 0.241971, 0.053991, 0.004432, 0.000134,
+        };
 
         private static readonly double[] kernel9 = {
             0.000000, 0.000001, 0.000007, 0.000032, 0.000053, 0.000032, 0.000007, 0.000001, 0.000000,

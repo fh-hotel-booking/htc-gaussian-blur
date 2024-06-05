@@ -158,7 +158,7 @@ namespace HpcGaussianBlur
             // maybe sychronize
             CheckStatus(Cl.SetKernelArg(kernel, 3, new IntPtr(imageHeight * sizeof(int) * 3), null));
             CheckStatus(Cl.SetKernelArg(kernel, 5, 1));
-            CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 2, null, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(imageHeight) }, new IntPtr[] { new IntPtr(imageHeight), new IntPtr(1) }, 0, null, out Event _));
+            CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 2, null, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(imageHeight) }, new IntPtr[] { new IntPtr(1), new IntPtr(imageHeight) }, 0, null, out Event _));
 
             // read the device output buffer to the host output array
             CheckStatus(Cl.EnqueueReadBuffer(commandQueue, bufferOutputImage, Bool.True, IntPtr.Zero, new IntPtr(imageDataSize), outputImageArray, 0, null, out Event _));

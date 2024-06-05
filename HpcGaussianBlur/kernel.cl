@@ -12,8 +12,17 @@ __kernel void apply_gaussian_blur(
 	size_t width = get_global_size(0);
 	size_t height = get_global_size(1);
 
-	size_t localSize = get_local_size(0);
-	size_t localIndex = get_local_id(0);
+	size_t localSize = 0;
+	size_t localIndex = 0;
+
+	if (ExecuteColumnWise == 0) {
+		localSize = get_local_size(0);
+		localIndex = get_local_id(0);
+	}
+	else {
+		localSize = get_local_size(1);
+		localIndex = get_local_id(1);
+	}
 
 	int index = (y * width + x) * 3;
 	int idColor1 = index;
@@ -70,7 +79,6 @@ __kernel void apply_gaussian_blur(
 	*/
 
 	if (ExecuteColumnWise == 0) { // execute row wise
-		
 		for (int dx = -halfKernelSize; dx <= halfKernelSize; dx++) {
 			int neighborX = x + dx;
 
