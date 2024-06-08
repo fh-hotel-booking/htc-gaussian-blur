@@ -34,18 +34,7 @@ namespace HpcGaussianBlur
                 outputImageArray[i] = 0;
             }
 
-            int[] inputImageArrayColumn = new int[imageHeight];
-            for (int i = 0; i < imageHeight; i++)
-            {
-                inputImageArrayColumn[i] = 0;
-            }
             int inputImageArrayColumnSize = imageHeight * sizeof(int) * 3;
-
-            int[] inputImageArrayRow = new int[imageWidth];
-            for (int i = 0; i < imageWidth; i++)
-            {
-                inputImageArrayRow[i] = 0;
-            }
             int inputImageArrayRowSize = imageWidth * sizeof(int) * 3;
 
             // used for checking error status of api calls
