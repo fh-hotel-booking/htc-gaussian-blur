@@ -148,7 +148,10 @@ namespace HpcGaussianBlur
             IntPtr[] maxWorkItemSizes = maxWorkItemSizesInfoBuffer.CastToArray<IntPtr>(maxWorkItemDimensions);
             Console.Write("Device Capabilities: Max work items in group per dimension:");
             for (int i = 0; i < maxWorkItemDimensions; ++i)
+            {
                 Console.Write(" " + i + ":" + maxWorkItemSizes[i]);
+            }
+
             Console.WriteLine();
 
             int maxWorkItemsSizeInfoZero = maxWorkItemSizes[0].ToInt32();
