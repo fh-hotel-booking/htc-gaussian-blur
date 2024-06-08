@@ -34,6 +34,19 @@ namespace HpcGaussianBlur
                 outputImageArray[i] = 0;
             }
 
+            int[] inputImageArrayColumn = new int[imageHeight];
+            for (int i = 0; i < imageHeight; i++)
+            {
+                inputImageArrayColumn[i] = 0;
+            }
+            int inputImageArrayColumnSize = imageHeight * sizeof(int) * 3;
+
+            int[] inputImageArrayRow = new int[imageWidth];
+            for (int i = 0; i < imageWidth; i++)
+            {
+                inputImageArrayRow[i] = 0;
+            }
+            int inputImageArrayRowSize = imageWidth * sizeof(int) * 3;
 
             // used for checking error status of api calls
             ErrorCode status;
@@ -111,7 +124,7 @@ namespace HpcGaussianBlur
             CheckStatus(Cl.SetKernelArg(kernel, 0, bufferInputImage));
             CheckStatus(Cl.SetKernelArg(kernel, 1, bufferOutputImage));
             CheckStatus(Cl.SetKernelArg(kernel, 2, bufferGaussianKernel));
-            CheckStatus(Cl.SetKernelArg(kernel, 3, new IntPtr(imageWidth * sizeof(int) * 3), null));
+            CheckStatus(Cl.SetKernelArg(kernel, 3, new IntPtr(inputImageArrayRowSize), null));
             CheckStatus(Cl.SetKernelArg(kernel, 4, gaussianFilterKernelSize));
             CheckStatus(Cl.SetKernelArg(kernel, 5, 0));
 
@@ -138,14 +151,14 @@ namespace HpcGaussianBlur
                 Console.Write(" " + i + ":" + maxWorkItemSizes[i]);
             Console.WriteLine();
 
-            InfoBuffer maxWorkItemsSizeInfoBuffer = new InfoBuffer(maxWorkItemSizes[0]);
-            int maxWorkItemsSizeInfo =maxWorkItemSizesInfoBuffer.CastTo<int>();
-            if (maxWorkItemsSizeInfo < imageWidth)
+            int maxWorkItemsSizeInfoZero = maxWorkItemSizes[0].ToInt32();
+            int maxWorkItemsSizeInfoOne = maxWorkItemSizes[1].ToInt32();
+            if (maxWorkItemsSizeInfoZero < imageWidth)
             {
                 Console.WriteLine("Error: Device needs to support work group size of image width");
                 System.Environment.Exit(1);
             }
-            if (maxWorkItemsSizeInfo < imageHeight)
+            if (maxWorkItemsSizeInfoOne < imageHeight)
             {
                 Console.WriteLine("Error: Device needs to support work group size of image height");
                 System.Environment.Exit(1);
@@ -156,7 +169,7 @@ namespace HpcGaussianBlur
             CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 2, null, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(imageHeight) }, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(1) }, 0, null, out Event _));
 
             // maybe sychronize
-            CheckStatus(Cl.SetKernelArg(kernel, 3, new IntPtr(imageHeight * sizeof(int) * 3), null));
+            CheckStatus(Cl.SetKernelArg(kernel, 3, new IntPtr(inputImageArrayColumnSize), null));
             CheckStatus(Cl.SetKernelArg(kernel, 5, 1));
             CheckStatus(Cl.EnqueueNDRangeKernel(commandQueue, kernel, 2, null, new IntPtr[] { new IntPtr(imageWidth), new IntPtr(imageHeight) }, new IntPtr[] { new IntPtr(1), new IntPtr(imageHeight) }, 0, null, out Event _));
 
